@@ -1,0 +1,390 @@
+GestorVuelos.java
+java//Singleton
+
+import java.util.*;
+
+public class GestorVuelos {
+    private static GestorVuelos instancia;
+    private final List<Vuelo> vuelosDisponibles;
+    private final List<Vuelo> reservas;
+    
+    private GestorVuelos() {
+        vuelosDisponibles = new ArrayList<>();
+        // listas con vuelos y sus asientos
+        vuelosDisponibles.add(new Vuelo("555", "Coronel", "Lota", "2 noviembre", 
+            Arrays.asList("1A", "1B", "2A", "2B", "3A", "3B")));
+        vuelosDisponibles.add(new Vuelo("666", "Chillan viejo", "Chillan nuevo", "10 octubre", 
+            Arrays.asList("1A", "1B", "2A", "2B")));
+        vuelosDisponibles.add(new Vuelo("777", "Chile", "Norcorea", "12 agosto", 
+            Arrays.asList("1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B")));
+        
+        reservas = new ArrayList<>();
+    }
+    
+    public static GestorVuelos getInstancia() {
+        if (instancia == null) {
+            instancia = new GestorVuelos();
+        }
+        return instancia;
+    }
+    
+    public List<Vuelo> getVuelosDisponibles() {
+        return new ArrayList<>(vuelosDisponibles);
+    }
+    
+    public void agregarReserva(Vuelo vuelo) {
+        reservas.add(vuelo);
+    }
+    
+    public void cancelarReserva(Vuelo vuelo) {
+        reservas.remove(vuelo);
+    }
+    
+    public List<Vuelo> getReservas() {
+        return new ArrayList<>(reservas);
+    }
+}
+PATRÓN PROTOTYPE
+Vuelo.java
+java//PROTOTYPE
+
+import java.util.*;
+
+public class Vuelo implements Cloneable {
+    private String numeroVuelo;
+    private String origen;
+    private String destino;
+    private String fecha;
+    private List<String> asientosDisponibles;
+    
+    public Vuelo(String numeroVuelo, String origen, String destino, String fecha, List<String> asientos) {
+        this.numeroVuelo = numeroVuelo;
+        this.origen = origen;
+        this.destino = destino;
+        this.fecha = fecha;
+        this.asientosDisponibles = new ArrayList<>(asientos);
+    }
+    
+    @Override
+    public Vuelo clone() {
+        try {
+            Vuelo cloned = (Vuelo) super.clone();
+            cloned.asientosDisponibles = new ArrayList<>(this.asientosDisponibles);
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("error de clonacion", e);
+        }
+    }
+    
+    public boolean reservarAsiento(String asiento) {
+        if (asientosDisponibles.contains(asiento)) {
+            asientosDisponibles.remove(asiento);
+            return true;
+        }
+        return false;
+    }
+    
+    public String getNumeroVuelo() { return numeroVuelo; }
+    public String getOrigen() { return origen; }
+    public String getDestino() { return destino; }
+    public String getFecha() { return fecha; }
+    public List<String> getAsientosDisponibles() { return new ArrayList<>(asientosDisponibles); }
+    
+    @Override
+    public String toString() {
+        return "el vuelo " + numeroVuelo + "que parte desde " + origen + " con destino a " + destino + "en la fecha: " + fecha + " Asiento: " + 
+               (asientosDisponibles.isEmpty() ? "reservado" : "disponible");
+    }
+}
+PATRÓN ADAPTER
+MetodoPago.java
+java//Adapter
+
+public interface MetodoPago {
+    void realizarPago();
+}
+TarjetaCredito.java
+java//ADAPTER
+
+public class TarjetaCredito {
+    public void pagarConCredito() {
+        System.out.println("pago con tarjeta de credito");
+    }
+}
+Paypal.java
+java//Adpter
+
+public class Paypal {
+    public void pagarConPayPal(String email) {
+        System.out.println("pago con paypal desde " + email);
+    }
+}
+AdaptadorTarjetaCredito.java
+java//ADAPTER
+
+public class AdaptadorTarjetaCredito implements MetodoPago {
+    private final TarjetaCredito tarjeta;
+    
+    public AdaptadorTarjetaCredito() {
+        this.tarjeta = new TarjetaCredito();
+    }
+    
+    @Override
+    public void realizarPago() {
+        tarjeta.pagarConCredito();
+    }
+}
+AdaptadorPaypal.java
+java//Adapter
+public class AdaptadorPaypal implements MetodoPago {
+    private Paypal paypal;
+    private String email;
+    
+    public AdaptadorPaypal(String email) {
+        this.paypal = new Paypal();
+        this.email = email;
+    }
+    
+    @Override
+    public void realizarPago() {
+        paypal.pagarConPayPal(email);
+    }
+}
+PATRÓN BRIDGE
+InterfazReserva.java
+java//Bridge - Implementador simplificado
+
+import java.util.*;
+
+public interface InterfazReserva {
+    void mostrarLista(List<Vuelo> lista);
+    void mostrarMensaje(String mensaje);
+    int obtenerSeleccion(Scanner scanner, String hola);
+    String obtenerTexto(Scanner scanner, String mondongo);
+}
+InterfazConsola.java
+javaimport java.util.*;
+
+public class InterfazConsola implements InterfazReserva {
+    
+    @Override
+    public void mostrarLista(List<Vuelo> lista) {
+        for (int i = 0; i < lista.size(); i++) {
+            System.out.println((i + 1) + ". " + lista.get(i));
+        }
+    }
+    
+    @Override
+    public void mostrarMensaje(String mensaje) {
+        System.out.println(mensaje);
+    }
+    
+    @Override
+    public int obtenerSeleccion(Scanner scanner, String prompt) {
+        System.out.print(prompt);
+        try {
+            return Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+    
+    @Override
+    public String obtenerTexto(Scanner scanner, String prompt) {
+        System.out.print(prompt);
+        return scanner.nextLine();
+    }
+}
+GestorReservas.java
+javaimport java.util.*;
+
+public class GestorReservas {
+    private InterfazReserva interfaz;
+    
+    public GestorReservas(InterfazReserva interfaz) {
+        this.interfaz = interfaz;
+    }
+    
+    public void mostrarReservas(List<Vuelo> reservas) {
+        if (reservas.isEmpty()) {
+            interfaz.mostrarMensaje("no tiene reservas activas");
+        } else {
+            interfaz.mostrarLista(reservas);
+        }
+    }
+    
+    public boolean modificarReserva(List<Vuelo> reservas, Scanner scanner) {
+        if (reservas.isEmpty()) {
+            interfaz.mostrarMensaje("no tiene reservas que modificar");
+            return false;
+        }
+        
+        interfaz.mostrarMensaje("selecciona reserva para modificar:");
+        interfaz.mostrarLista(reservas);
+        
+        int seleccion = interfaz.obtenerSeleccion(scanner, "Numero de reserva: ") - 1;
+        
+        if (seleccion >= 0 && seleccion < reservas.size()) {
+            Vuelo vuelo = reservas.get(seleccion);
+            interfaz.mostrarMensaje("asientos disponibles: " + vuelo.getAsientosDisponibles());
+            
+            String nuevoAsiento = interfaz.obtenerTexto(scanner, "Seleccione nuevo asiento: ");
+            
+            if (vuelo.reservarAsiento(nuevoAsiento)) {
+                interfaz.mostrarMensaje("asiento modificado, su nuevo asiento: " + nuevoAsiento);
+                return true;
+            } else {
+                interfaz.mostrarMensaje("asiento no disponible.");
+            }
+        } else {
+            interfaz.mostrarMensaje("selección no valida");
+        }
+        return false;
+    }
+}
+CLASE PRINCIPAL
+Main.java
+javaimport java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        GestorVuelos gestor = GestorVuelos.getInstancia();
+        
+        // aqui usamos bridge
+        GestorReservas gestorReservas = new GestorReservas(new InterfazConsola());
+        
+        Vuelo vueloSeleccionado = null;
+        String asientoSeleccionado = null;
+        
+        while (true) {
+            System.out.println("\n=== SISTEMA DE RESERVAS DE VUELOS ===");
+            System.out.println("1. Ver vuelos disponibles");
+            System.out.println("2. Seleccionar vuelo y asiento");
+            System.out.println("3. Pagar reserva");
+            System.out.println("4. Ver mis reservas");
+            System.out.println("5. Modificar reserva");
+            System.out.println("6. Cancelar Reserva");
+            System.out.println("7. Salir");
+            System.out.print("Seleccione una opción: ");
+            
+            int opcion = Integer.parseInt(scanner.nextLine());
+            
+            switch (opcion) {
+                case 1:
+                    System.out.println("\nvuelos disponibles:");
+                    List<Vuelo> vuelos = gestor.getVuelosDisponibles();
+                    for (int i = 0; i < vuelos.size(); i++) {
+                        System.out.println((i+1) + ". " + vuelos.get(i));
+                    }
+                    break;
+                    
+                case 2:
+                    System.out.println("\nselecciona un vuelo:");
+                    List<Vuelo> vuelosDisponibles = gestor.getVuelosDisponibles();
+                    for (int i = 0; i < vuelosDisponibles.size(); i++) {
+                        System.out.println((i+1) + ". " + vuelosDisponibles.get(i));
+                    }
+                    System.out.print("Numero de vuelo: ");
+                    int seleccion = Integer.parseInt(scanner.nextLine()) - 1;
+                    
+                    if (seleccion >= 0 && seleccion < vuelosDisponibles.size()) {
+                        vueloSeleccionado = vuelosDisponibles.get(seleccion).clone();
+                        
+                        System.out.println("\n estos son nuestros asientos disponibles " + vueloSeleccionado + ":");
+                        System.out.println(vueloSeleccionado.getAsientosDisponibles());
+                        System.out.print("selecciona un asiento: ");
+                        asientoSeleccionado = scanner.nextLine();
+                        
+                        if (vueloSeleccionado.reservarAsiento(asientoSeleccionado)) {
+                            System.out.println("el asiento " + asientoSeleccionado + " reservado temporalmente");
+                        } else {
+                            System.out.println("Asiento no disponible");
+                            vueloSeleccionado = null;
+                            asientoSeleccionado = null;
+                        }
+                    } else {
+                        System.out.println("Selección inválida");
+                    }
+                    break;
+                    
+                case 3:
+                    if (vueloSeleccionado == null) {
+                        System.out.println("no hay vuelo seleccionado para pagar");
+                        break;
+                    }
+                    
+                    System.out.println("\nresumen de reserva:");
+                    System.out.println("Vuelo: " + vueloSeleccionado);
+                    System.out.println("Asiento: " + asientoSeleccionado);
+                    
+                    System.out.println("\nselecciona metodo de pago:");
+                    System.out.println("1. tarjeta de credito");
+                    System.out.println("2. paypal");
+                    System.out.print("Opción: ");
+                    int metodo = Integer.parseInt(scanner.nextLine());
+                    
+                    MetodoPago pago = (metodo == 2) ? 
+                        new AdaptadorPaypal(obtenerEmailPaypal(scanner)) : 
+                        new AdaptadorTarjetaCredito();
+                    
+                    if (metodo != 1 && metodo != 2) {
+                        System.out.println("Opcion invalida, usando tarjeta de crédito por defecto");
+                    }
+                    
+                    // pago y adapters
+                    pago.realizarPago();
+                    gestor.agregarReserva(vueloSeleccionado);
+                    
+                    System.out.println("Reserva realizada");
+                    vueloSeleccionado = null;
+                    asientoSeleccionado = null;
+                    break;
+                    
+                case 4:
+                    System.out.println("\nMis reservas:");
+                    gestorReservas.mostrarReservas(gestor.getReservas());
+                    break;
+                    
+                case 5:
+                    gestorReservas.modificarReserva(gestor.getReservas(), scanner);
+                    break;
+
+                case 6:
+                    List<Vuelo> reservas = gestor.getReservas();
+                    if (reservas.isEmpty()) {
+                        System.out.println("\nNo tiene reservas para cancelar");
+                        break;
+                    }
+                    
+                    System.out.println("\nselecciona reserva a cancelar:");
+                    for (int i = 0; i < reservas.size(); i++) {
+                        System.out.println((i+1) + ". " + reservas.get(i));
+                    }
+                    System.out.print("numero de reserva: ");
+                    int reservaCancelar = Integer.parseInt(scanner.nextLine()) - 1;
+
+                    if (reservaCancelar >= 0 && reservaCancelar < reservas.size()) {
+                        gestor.cancelarReserva(reservas.get(reservaCancelar));
+                        System.out.println("reserva cancelada");
+                    } else {
+                        System.out.println("selección invalida");
+                    }
+                    break;
+
+                case 7:
+                    System.out.println("Gracias por usar nuestro sistema de reservas");
+                    scanner.close();
+                    return;
+
+                default:
+                    System.out.println("Opcion invalida, intente nuevamente");    
+            }
+        }
+    }
+    
+    private static String obtenerEmailPaypal(Scanner scanner) {
+        System.out.print("ingrese su email de paypal: ");
+        return scanner.nextLine();
+    }
+}
