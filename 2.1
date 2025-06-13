@@ -1,0 +1,413 @@
+GMesas.java
+javaimport java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class GMesas {
+    private static GMesas instancia;
+    private final List<Mesa> mesasDisponibles;
+    private final List<Reserva> reservas;
+    
+    private GMesas() {
+        mesasDisponibles = new ArrayList<>();
+        reservas = new ArrayList<>();
+        
+        // Inicializar con mesas de ejemplo
+        List<String> horarios = Arrays.asList("12:00", "13:00", "14:00", "19:00", "20:00", "21:00");
+        mesasDisponibles.add(new Mesa(1, 2, "Lunes", new ArrayList<>(horarios)));
+
+        mesasDisponibles.add(new Mesa(1, 2, "Martes", new ArrayList<>(horarios)));
+
+        mesasDisponibles.add(new Mesa(3, 6, "Miercoles", new ArrayList<>(horarios)));
+
+        mesasDisponibles.add(new Mesa(4, 2, "Jueves", new ArrayList<>(horarios)));
+        
+        mesasDisponibles.add(new Mesa(5, 4, "Viernes", new ArrayList<>(horarios)));
+    }
+    
+    public static GMesas getInstancia() {
+        if (instancia == null) {
+            instancia = new GMesas();
+        }
+        return instancia;
+    }
+    
+    public List<Mesa> getMesasDisponibles() {
+        return new ArrayList<>(mesasDisponibles);
+    }
+    
+    public void agregarReserva(Reserva reserva) {
+        reservas.add(reserva);
+    }
+    
+    public void cancelarReserva(Reserva reserva) {
+        reservas.remove(reserva);
+    }
+    
+    public List<Reserva> getReservas() {
+        return new ArrayList<>(reservas);
+    }
+}
+
+2. PATRÓN PROTOTYPE
+Mesa.java
+javaimport java.util.*;
+
+public class Mesa implements Cloneable {
+    private int numeroMesa;
+    private int capacidad;
+    private String fecha;
+    private List<String> horariosDisponibles;
+    
+    public Mesa(int numeroMesa, int capacidad, String fecha, List<String> horarios) {
+        this.numeroMesa = numeroMesa;
+        this.capacidad = capacidad;
+        this.fecha = fecha;
+        this.horariosDisponibles = new ArrayList<>(horarios);
+    }
+    
+    @Override
+    public Mesa clone() {
+        try {
+            Mesa cloned = (Mesa) super.clone();
+            cloned.horariosDisponibles = new ArrayList<>(this.horariosDisponibles);
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Error al clonar mesa", e);
+        }
+    }
+    
+    public boolean reservarHorario(String horario) {
+        if (horariosDisponibles.contains(horario)) {
+            horariosDisponibles.remove(horario);
+            return true;
+        }
+        return false;
+    }
+    
+    public int getNumeroMesa() { return numeroMesa; }
+    public int getCapacidad() { return capacidad; }
+    public String getFecha() { return fecha; }
+    public List<String> getHorariosDisponibles() { return new ArrayList<>(horariosDisponibles); }
+    
+    @Override
+    public String toString() {
+        return "Mesa " + numeroMesa + " (" + capacidad + " personas) - " + fecha + 
+               " - Horarios: " + (horariosDisponibles.isEmpty() ? "Reservada" : horariosDisponibles.toString());
+    }
+}
+
+3. PATRÓN ADAPTER
+Notificacion.java
+javapublic interface Notificacion {
+    void Confirmacion(Reserva reserva);
+}
+ServicioEmail.java
+javapublic class ServicioEmail {
+    public void enviarEmail(String email, String mensaje) {
+        System.out.println(" Email enviado a: " + email);
+        System.out.println("   Mensaje: " + mensaje);
+    }
+}
+ServicioSMS.java
+javapublic class ServicioSMS {
+    public void mandarMensaje(String mensaje) { 
+        System.out.println(" SMS enviado: " + mensaje);
+    }
+}
+AdaptadorEmail.java
+javapublic class AdaptadorEmail implements Notificacion {
+    private ServicioEmail servicio;
+    
+    public AdaptadorEmail() {
+        this.servicio = new ServicioEmail();
+    }
+    
+    @Override
+    public void Confirmacion(Reserva reserva) {
+        String mensaje = "se confirmo una reserva bajo el nombre de  " + reserva.getNombreCliente() + " en la mesa " + reserva.getMesa().getNumeroMesa() + " el dia " + reserva.getMesa().getFecha() + " a las " + reserva.getHorario();
+        servicio.enviarEmail(reserva.getEmailCliente(), mensaje);
+    }
+}
+AdaptadorSMS.java
+javapublic class AdaptadorSMS implements Notificacion {
+    private ServicioSMS servicio;
+    
+    public AdaptadorSMS() {
+        this.servicio = new ServicioSMS();
+    }
+    
+    @Override
+    public void Confirmacion(Reserva reserva) {
+        String mensaje = "se confirmo una reserva para la siguiente mesa: " + reserva.getMesa().getNumeroMesa() + " el " + reserva.getMesa().getFecha() + " a las " + reserva.getHorario();
+        servicio.mandarMensaje(mensaje);
+    }
+}
+
+4. PATRÓN BRIDGE
+InterfazBrid.java
+java// InterfazReserva.java - Bridge Interface
+import java.util.*;
+
+public interface InterfazBrid {
+    void mostrarLista(List<Reserva> lista);
+    void mostrarMensaje(String mensaje);
+    int obtenerSeleccion(Scanner scanner, String hola);
+    String obtenerTexto(Scanner scanner, String merequetenge);
+}
+Interfazbridg2.java
+java// aqui implementamos bridge
+import java.util.*;
+
+public class Interfazbridg2 implements InterfazBrid {
+    
+    @Override
+    public void mostrarLista(List<Reserva> lista) {
+        for (int i = 0; i < lista.size(); i++) {
+            System.out.println((i + 1) + ". " + lista.get(i));
+        }
+    }
+    
+    @Override
+    public void mostrarMensaje(String mensaje) {
+        System.out.println(mensaje);
+    }
+    
+    @Override
+    public int obtenerSeleccion(Scanner scanner, String prompt) {
+        System.out.print(prompt);
+        try {
+            return Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+    
+    @Override
+    public String obtenerTexto(Scanner scanner, String prompt) {
+        System.out.print(prompt);
+        return scanner.nextLine();
+    }
+}
+GestorReservas.java
+java// GestorReservas.java - Bridge Abstraction
+import java.util.*;
+
+public class GestorReservas {
+    private InterfazBrid interfaz;
+    
+    public GestorReservas(InterfazBrid interfaz) {
+        this.interfaz = interfaz;
+    }
+    
+    public void mostrarReservas(List<Reserva> reservas) {
+        if (reservas.isEmpty()) {
+            interfaz.mostrarMensaje("No tiene reservas activas");
+        } else {
+            interfaz.mostrarLista(reservas);
+        }
+    }
+    
+    public boolean modificarReserva(List<Reserva> reservas, Scanner scanner) {
+        if (reservas.isEmpty()) {
+            interfaz.mostrarMensaje("No tiene reservas para modificar");
+            return false;
+        }
+        
+        interfaz.mostrarMensaje("Selecciona la reserva modificaras:");
+        interfaz.mostrarLista(reservas);
+        
+        int seleccion = interfaz.obtenerSeleccion(scanner, "Número de reserva: ") - 1;
+        
+        if (seleccion >= 0 && seleccion < reservas.size()) {
+            Reserva reserva = reservas.get(seleccion);
+            interfaz.mostrarMensaje("Horarios disponibles: " + reserva.getMesa().getHorariosDisponibles());
+            
+            String nuevoHorario = interfaz.obtenerTexto(scanner, "Seleccione nuevo horario: ");
+            
+            if (reserva.getMesa().getHorariosDisponibles().contains(nuevoHorario)) {
+                // Aquí normalmente actualizarías la reserva
+                interfaz.mostrarMensaje("Horario modificado con éxito. Nuevo horario: " + nuevoHorario);
+                return true;
+            } else {
+                interfaz.mostrarMensaje("El horario no está disponible.");
+            }
+        } else {
+            interfaz.mostrarMensaje("Selección inválida");
+        }
+        return false;
+    }
+}
+
+5. CLASE AUXILIAR
+Reserva.java
+javapublic class Reserva {
+    private Mesa mesa;
+    private String nombreCliente;
+    private String emailCliente;
+    private String horario;
+    
+    public Reserva(Mesa mesa, String nombreCliente, String emailCliente, String horario) {
+        this.mesa = mesa;
+        this.nombreCliente = nombreCliente;
+        this.emailCliente = emailCliente;
+        this.horario = horario;
+    }
+    
+    public Mesa getMesa() { return mesa; }
+    public String getNombreCliente() { return nombreCliente; }
+    public String getEmailCliente() { return emailCliente; }
+    public String getHorario() { return horario; }
+    
+    @Override
+    public String toString() {
+        return "Reserva: " + nombreCliente + " - mesa " + mesa.getNumeroMesa() + 
+               " el " + mesa.getFecha() + " a las " + horario;
+    }
+}
+
+6. CLASE MAIN
+Main.java
+java
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        GMesas gestor = GMesas.getInstancia(); // SINGLETON
+        
+        // creamos el gestor de reservas con bridge
+        GestorReservas gestorReservas = new GestorReservas(new Interfazbridg2());
+        
+        Mesa mesaSeleccionada = null;
+        String horarioSeleccionado = null;
+        
+        while (true) {
+            System.out.println("\n=== SISTEMA DE RESERVAS DE MESAS PARA RESTAURANTE ===");
+            System.out.println("1. Ver mesas disponibles");
+            System.out.println("2. Seleccionar mesa y horario");
+            System.out.println("3. Confirmar reserva");
+            System.out.println("4. Ver mis reservas");
+            System.out.println("5. Modificar reserva");
+            System.out.println("6. Cancelar Reserva");
+            System.out.println("7. Salir");
+            System.out.print("Seleccione una opcion: ");
+            
+            try {
+                int opcion = Integer.parseInt(scanner.nextLine());
+                
+                switch (opcion) {
+                    case 1:
+                        System.out.println("\nMesas disponibles:");
+                        List<Mesa> mesas = gestor.getMesasDisponibles();
+                        for (int i = 0; i < mesas.size(); i++) {
+                            System.out.println((i+1) + ". " + mesas.get(i));
+                        }
+                        break;
+                        
+                    case 2:
+                        System.out.println("\nselecciona una mesa:");
+                        List<Mesa> mesasDisponibles = gestor.getMesasDisponibles();
+                        for (int i = 0; i < mesasDisponibles.size(); i++) {
+                            System.out.println((i+1) + ". " + mesasDisponibles.get(i));
+                        }
+                        System.out.print("numero de mesa: ");
+                        int seleccion = Integer.parseInt(scanner.nextLine()) - 1;
+                        
+                        if (seleccion >= 0 && seleccion < mesasDisponibles.size()) {
+                            mesaSeleccionada = mesasDisponibles.get(seleccion).clone(); // PROTOTYPE
+                            
+                            System.out.println("\nhorarios disponibles:");
+                            System.out.println(mesaSeleccionada.getHorariosDisponibles());
+                            System.out.print("eliga un horario: ");
+                            horarioSeleccionado = scanner.nextLine();
+                            
+                            if (mesaSeleccionada.reservarHorario(horarioSeleccionado)) {
+                                System.out.println("su seleccion se encuentra reservada temporalmente");
+                            } else {
+                                System.out.println("Horario no disponible");
+                                mesaSeleccionada = null;
+                                horarioSeleccionado = null;
+                            }
+                        } else {
+                            System.out.println("Selección inválida");
+                        }
+                        break;
+                        
+                    case 3:
+                        if (mesaSeleccionada == null) {
+                            System.out.println("No hay mesa seleccionada");
+                            break;
+                        }
+                        
+                        System.out.print("Nombre del cliente: ");
+                        String nombre = scanner.nextLine();
+                        System.out.print("Email: ");
+                        String email = scanner.nextLine();
+                        
+                        Reserva nuevaReserva = new Reserva(mesaSeleccionada, nombre, email, horarioSeleccionado);
+                        
+                        System.out.println("\nconfirme por alguno de estos medios:");
+                        System.out.println("1. Email");
+                        System.out.println("2. SMS");
+                        System.out.print("Opcion: ");
+                        int metodo = Integer.parseInt(scanner.nextLine());
+                        
+                        // adapter noti
+                        Notificacion notificacion = (metodo == 2) ? new AdaptadorSMS() : new AdaptadorEmail();
+                        notificacion.Confirmacion(nuevaReserva);
+                        //para abreviar usamos el ? ya que asi nos ahorramos armar un if y un else
+                        gestor.agregarReserva(nuevaReserva);
+                        
+                        System.out.println("reserva completada");
+                        mesaSeleccionada = null;
+                        horarioSeleccionado = null;
+                        break;
+                        
+                    case 4:
+                        System.out.println("\nMis reservas:");
+                        gestorReservas.mostrarReservas(gestor.getReservas()); // BRIDGE
+                        break;
+                        
+                    case 5:
+                        gestorReservas.modificarReserva(gestor.getReservas(), scanner); // BRIDGE
+                        break;
+
+                    case 6:
+                        List<Reserva> reservas = gestor.getReservas();
+                        if (reservas.isEmpty()) {
+                            System.out.println("\n no tiene reservas para cancelar");
+                            break;
+                        }
+                        
+                        System.out.println("\n eliga la reserva a cancelar:");
+                        for (int i = 0; i < reservas.size(); i++) {
+                            System.out.println((i+1) + ". " + reservas.get(i));
+                        }
+                        System.out.print("numero de reserva: ");
+                        int reservaCancelar = Integer.parseInt(scanner.nextLine()) - 1;
+
+                        if (reservaCancelar >= 0 && reservaCancelar < reservas.size()) {
+                            gestor.cancelarReserva(reservas.get(reservaCancelar));
+                            System.out.println("reserva cancelada");
+                        } else {
+                            System.out.println("Selección inválida");
+                        }
+                        break;
+
+                    case 7:
+                        System.out.println("Gracias por usar nuestro sistema de reservas");
+                        scanner.close();
+                        return;
+
+                    default:
+                        System.out.println("error, intente nuevamente");    
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("ingrese un numero validoi");
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+}
